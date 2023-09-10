@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "swift2d",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/BMilliet/Swift2D",
+      "state" : {
+        "branch" : "main",
+        "revision" : "b3199a3154889f15c1a6ab0c16363fc3170cbcb0"
+      }
+    }
+  ],
+  "version" : 2
+}
