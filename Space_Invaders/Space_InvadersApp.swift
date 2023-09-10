@@ -9,9 +9,9 @@ struct Space_InvadersApp: App {
     }
 }
 
-let GAME_SCALE = 32
+let GAME_SCALE = 80
 
-let BLOCK_SIZE: CGFloat  = 20
+let BLOCK_SIZE: CGFloat  = 8
 let CANVAS_SIZE: CGFloat = CGFloat(GAME_SCALE) * BLOCK_SIZE  //640
 
 import Swift2D
@@ -74,6 +74,7 @@ final class GameViewModel: ObservableObject {
     func startGame() {
         addTank()
         addEnemies()
+        addBases()
 
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             self?.moveParticles()
@@ -88,8 +89,12 @@ final class GameViewModel: ObservableObject {
 
 
     func shoot() {
+        let matrix = [
+            [3],
+            [3],
+        ]
         let tank = controller.shape("tank")!
-        let shape = Shape(id: "bullet_\(UUID())", matrix: [[3]], column: tank.column + 1, row: GAME_SCALE - 3)
+        let shape = Shape(id: "bullet_\(UUID())", matrix: matrix, column: tank.column + matrix.count, row: GAME_SCALE - 5)
         try? controller.addToCanvas(shape: shape)
 
         render()
@@ -103,7 +108,12 @@ final class GameViewModel: ObservableObject {
 
 
     private func addTank() {
-        let tank = Shape(id: "tank", matrix: [[0,1,0],[1,1,1]], column: GAME_SCALE/2, row: GAME_SCALE - 2)
+        let matrix = [
+            [0,0,1,0,0],
+            [1,1,1,1,1],
+            [1,1,1,1,1],
+        ]
+        let tank = Shape(id: "tank", matrix: matrix, column: GAME_SCALE/2, row: GAME_SCALE - matrix.count)
         try? controller.addToCanvas(shape: tank)
     }
 
@@ -113,13 +123,26 @@ final class GameViewModel: ObservableObject {
         try? controller.addToCanvas(shape: enemy)
     }
 
+    private func addBases() {
+        let matrix = [
+            [4,4,4,4,4,4,4],
+            [4,4,4,4,4,4,4],
+            [4,4,4,4,4,4,4],
+            [4,4,0,0,0,4,4],
+            [4,4,0,0,0,4,4],
+        ]
+        let tank = Shape(id: "base_\(UUID())", matrix: matrix, column: GAME_SCALE - (matrix.first!.count + 2), row: GAME_SCALE - (matrix.count * 3))
+        try! controller.addToCanvas(shape: tank)
+    }
+
 
     private func generateBoard() {
 
         let matrix = controller.canvas
+        let offSet = BLOCK_SIZE / 2
 
         board = AnyView(
-            ZStack {
+            ZStack(alignment: .topLeading) {
                 Rectangle().frame(width: CANVAS_SIZE, height: CANVAS_SIZE)
                     .background(.gray)
 
@@ -138,8 +161,8 @@ final class GameViewModel: ObservableObject {
                                     y: CGFloat(row) * BLOCK_SIZE
                                 )
                                 .offset(
-                                    x: 83.5,
-                                    y: 10
+                                    x: offSet,
+                                    y: offSet
                                 )
 
 
@@ -152,8 +175,8 @@ final class GameViewModel: ObservableObject {
                                     y: CGFloat(row) * BLOCK_SIZE
                                 )
                                 .offset(
-                                    x: 83.5,
-                                    y: 10
+                                    x: offSet,
+                                    y: offSet
                                 )
 
 
@@ -161,14 +184,29 @@ final class GameViewModel: ObservableObject {
 
                             Circle()
                                 .fill(Color.red)
-                                .frame(width: BLOCK_SIZE - 10, height: BLOCK_SIZE - 10)
+                                .frame(width: BLOCK_SIZE / 1.5, height: BLOCK_SIZE / 1.5)
                                 .position(
                                     x: CGFloat(column) * BLOCK_SIZE,
                                     y: CGFloat(row) * BLOCK_SIZE
                                 )
                                 .offset(
-                                    x: 83.5,
-                                    y: 10
+                                    x: offSet,
+                                    y: offSet
+                                )
+
+
+                        } else if point == 4 {
+
+                            Rectangle()
+                                .fill(Color.green)
+                                .frame(width: BLOCK_SIZE, height: BLOCK_SIZE)
+                                .position(
+                                    x: CGFloat(column) * BLOCK_SIZE,
+                                    y: CGFloat(row) * BLOCK_SIZE
+                                )
+                                .offset(
+                                    x: offSet,
+                                    y: offSet
                                 )
                         }
                     }
