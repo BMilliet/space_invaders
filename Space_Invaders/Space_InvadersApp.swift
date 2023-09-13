@@ -58,7 +58,7 @@ struct GameView: View {
 
 final class GameViewModel: ObservableObject {
 
-    let controller: CanvasController
+    let swift2d: Swift2D
 
     @Published var board: AnyView = AnyView(ZStack{Rectangle()})
 
@@ -66,8 +66,10 @@ final class GameViewModel: ObservableObject {
 
 
     init() {
-        controller = CanvasController(columns: GAME_SCALE, rows: GAME_SCALE,
-                                      collisions: [.leftWall, .rightWall, .floor, .anotherShape])
+        swift2d = Swift2D(
+            columns: GAME_SCALE, rows: GAME_SCALE,
+            collisions: [.leftWall, .rightWall, .floor, .anotherShape]
+        )
     }
 
 
@@ -83,7 +85,7 @@ final class GameViewModel: ObservableObject {
 
 
     func move(_ move: Move, id: String) {
-        try? controller.move(move, id: id)
+        try? swift2d.move(move, id: id)
         render()
     }
 
@@ -93,9 +95,9 @@ final class GameViewModel: ObservableObject {
             [3],
             [3],
         ]
-        let tank = controller.shape("tank")!
+        let tank = swift2d.shape("tank")!
         let shape = Shape(id: "bullet_\(UUID())", matrix: matrix, column: tank.column + matrix.count, row: GAME_SCALE - 5)
-        try? controller.addToCanvas(shape: shape)
+        try? swift2d.addToCanvas(shape: shape)
 
         render()
     }
@@ -103,6 +105,7 @@ final class GameViewModel: ObservableObject {
 
     func render() {
         removeOutOfBounds()
+        handleCollisions()
         generateBoard()
     }
 
@@ -114,13 +117,13 @@ final class GameViewModel: ObservableObject {
             [1,1,1,1,1],
         ]
         let tank = Shape(id: "tank", matrix: matrix, column: GAME_SCALE/2, row: GAME_SCALE - matrix.count)
-        try? controller.addToCanvas(shape: tank)
+        try? swift2d.addToCanvas(shape: tank)
     }
 
 
     private func addEnemies() {
-        let enemy = Shape(id: "enemy_\(UUID())", matrix: [[2]], column: GAME_SCALE / 2, row: 0)
-        try? controller.addToCanvas(shape: enemy)
+        let enemy = Shape(id: "enemy_\(UUID())", matrix: [[2]], column: GAME_SCALE / 2, row: 2)
+        try? swift2d.addToCanvas(shape: enemy)
     }
 
     private func addBases() {
@@ -132,13 +135,13 @@ final class GameViewModel: ObservableObject {
             [4,4,0,0,0,4,4],
         ]
         let tank = Shape(id: "base_\(UUID())", matrix: matrix, column: GAME_SCALE - (matrix.first!.count + 2), row: GAME_SCALE - (matrix.count * 3))
-        try! controller.addToCanvas(shape: tank)
+        try! swift2d.addToCanvas(shape: tank)
     }
 
 
     private func generateBoard() {
 
-        let matrix = controller.canvas
+        let matrix = swift2d.canvas
         let offSet = BLOCK_SIZE / 2
 
         board = AnyView(
@@ -217,11 +220,11 @@ final class GameViewModel: ObservableObject {
 
 
     private func moveParticles() {
-        controller.register.keys
-            .filter { $0.hasPrefix("bullet_") }
-            .compactMap { controller.register[$0] }
+        swift2d.getShapes
+            .filter { $0.key.hasPrefix("bullet_") }
             .forEach {
-                try? controller.move(.up, id: $0.id)
+                let shape = $0.value
+                try? swift2d.move(.up, id: shape.id)
             }
 
         render()
@@ -229,11 +232,11 @@ final class GameViewModel: ObservableObject {
 
 
     private func moveEnemies() {
-        controller.register.keys
-            .filter { $0.hasPrefix("enemy_") }
-            .compactMap { controller.register[$0] }
+        swift2d.getShapes
+            .filter { $0.key.hasPrefix("enemy_") }
             .forEach {
-                //try! controller.move(.right, id: $0.id)
+                let shape = $0.value
+              //  try? swift2d.move(.up, id: shape.id)
             }
 
         render()
@@ -243,8 +246,7 @@ final class GameViewModel: ObservableObject {
     private func removeOutOfBounds() {
         var toRemove = [String]()
 
-        controller.register.keys
-            .compactMap { controller.register[$0] }
+        swift2d.getShapes.values
             .forEach {
                 let row = $0.row
                 let col = $0.column
@@ -256,7 +258,31 @@ final class GameViewModel: ObservableObject {
 
         toRemove.forEach {
             print("removing \($0)")
-            controller.remove(id: $0)
+            swift2d.remove(id: $0)
+        }
+    }
+
+    private func handleCollisions() {
+
+        let bullets = swift2d.getShapes.filter { $0.key.hasPrefix("bullet_") }.values.filter { !$0.lastCollidedShape.isEmpty }
+
+        bullets.forEach {
+            let collidedShape = swift2d.getShapes[$0.lastCollidedShape]!
+
+            if collidedShape.id.contains("enemy_") {
+                print("hit enemy")
+                swift2d.remove(id: collidedShape.id)
+
+            } else if collidedShape.id.contains("bullet_") {
+                print("hit bullet")
+                swift2d.remove(id: collidedShape.id)
+
+            } else if collidedShape.id.contains("base_") {
+                print("hit base")
+                swift2d.remove(id: collidedShape.id)
+            }
+
+            swift2d.remove(id: $0.id)
         }
     }
 
