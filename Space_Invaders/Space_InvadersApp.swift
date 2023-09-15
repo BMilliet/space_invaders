@@ -122,7 +122,7 @@ final class GameViewModel: ObservableObject {
 
 
     private func addEnemies() {
-        let enemy = Shape(id: "enemy_\(UUID())", matrix: [[2]], column: GAME_SCALE / 2, row: 2)
+        let enemy = Shape(id: "enemy_\(UUID())", matrix: [[2,2,2],[2,2,2]], column: GAME_SCALE / 2, row: 2)
         try? swift2d.addToCanvas(shape: enemy)
     }
 
@@ -171,8 +171,9 @@ final class GameViewModel: ObservableObject {
 
                         } else if point == 2 {
 
-                            Text("👾")
-                                .font(Font.system(size: 32))
+                            Rectangle()
+                                .fill(Color.purple)
+                                .frame(width: BLOCK_SIZE, height: BLOCK_SIZE)
                                 .position(
                                     x: CGFloat(column) * BLOCK_SIZE,
                                     y: CGFloat(row) * BLOCK_SIZE
@@ -270,16 +271,26 @@ final class GameViewModel: ObservableObject {
             let collidedShape = swift2d.getShapes[$0.lastCollidedShape]!
 
             if collidedShape.id.contains("enemy_") {
-                print("hit enemy")
+                print("hit enemy at \(collidedShape.lastCollidedPoint)")
                 swift2d.remove(id: collidedShape.id)
 
             } else if collidedShape.id.contains("bullet_") {
-                print("hit bullet")
+                print("hit bullet at \(collidedShape.lastCollidedPoint)")
                 swift2d.remove(id: collidedShape.id)
 
             } else if collidedShape.id.contains("base_") {
-                print("hit base")
+
                 swift2d.remove(id: collidedShape.id)
+
+                let relative = collidedShape.lastRelativeCollisionPoint!
+                var matrix = collidedShape.matrix //[relative.column][relative.row]
+                matrix[relative.row][relative.column] = 0
+                collidedShape.matrix = matrix
+                collidedShape.printMatrix()
+
+                try! swift2d.addToCanvas(shape: collidedShape)
+
+                print("hit base at \(collidedShape.lastCollidedPoint), relative collision point \(collidedShape.lastRelativeCollisionPoint)")
             }
 
             swift2d.remove(id: $0.id)
