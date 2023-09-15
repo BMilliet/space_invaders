@@ -46,6 +46,7 @@ struct GameView: View {
             .keyboardShortcut(KeyEquivalent.space, modifiers: [])
             .padding()
         }
+
         .onAppear {
             viewModel.startGame()
         }
@@ -78,7 +79,7 @@ final class GameViewModel: ObservableObject {
         addEnemies()
         addBases()
 
-        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { [weak self] _ in
             self?.moveParticles()
         }
     }
@@ -122,8 +123,19 @@ final class GameViewModel: ObservableObject {
 
 
     private func addEnemies() {
-        let enemy = Shape(id: "enemy_\(UUID())", matrix: [[2,2,2],[2,2,2]], column: GAME_SCALE / 2, row: 2)
-        try? swift2d.addToCanvas(shape: enemy)
+        let matrix = [
+            [2,2,2],
+            [2,2,2],
+        ]
+
+        for l in 0..<5 {
+            let row = (6 * l) + 10
+            for i in 0..<9 {
+                let col = (matrix.first!.count + (matrix.first!.count * i) + (i * 4) )
+                let tank = Shape(id: "enemy_line_\(l)_id_\(i)", matrix: matrix, column: col, row: row)
+                try! swift2d.addToCanvas(shape: tank)
+            }
+        }
     }
 
     private func addBases() {
@@ -134,8 +146,14 @@ final class GameViewModel: ObservableObject {
             [4,4,0,0,0,4,4],
             [4,4,0,0,0,4,4],
         ]
-        let tank = Shape(id: "base_\(UUID())", matrix: matrix, column: GAME_SCALE - (matrix.first!.count + 2), row: GAME_SCALE - (matrix.count * 3))
-        try! swift2d.addToCanvas(shape: tank)
+
+        let row = GAME_SCALE - (matrix.count * 3)
+
+        for i in 0..<4 {
+            let col = (matrix.first!.count + (matrix.first!.count * i) + (i * 12) )
+            let tank = Shape(id: "base_\(i)", matrix: matrix, column: col, row: row)
+            try! swift2d.addToCanvas(shape: tank)
+        }
     }
 
 
@@ -146,8 +164,9 @@ final class GameViewModel: ObservableObject {
 
         board = AnyView(
             ZStack(alignment: .topLeading) {
-                Rectangle().frame(width: CANVAS_SIZE, height: CANVAS_SIZE)
-                    .background(.gray)
+                Rectangle()
+                    .fill(Color.black)
+                    .frame(width: CANVAS_SIZE, height: CANVAS_SIZE)
 
 
                 ForEach(0..<matrix.count, id: \.self) { row in
@@ -186,9 +205,9 @@ final class GameViewModel: ObservableObject {
 
                         } else if point == 3 {
 
-                            Circle()
+                            Rectangle()
                                 .fill(Color.red)
-                                .frame(width: BLOCK_SIZE / 1.5, height: BLOCK_SIZE / 1.5)
+                                .frame(width: BLOCK_SIZE / 2, height: BLOCK_SIZE / 2)
                                 .position(
                                     x: CGFloat(column) * BLOCK_SIZE,
                                     y: CGFloat(row) * BLOCK_SIZE
