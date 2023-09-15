@@ -63,7 +63,9 @@ final class GameViewModel: ObservableObject {
 
     @Published var board: AnyView = AnyView(ZStack{Rectangle()})
 
-    private var timer: Timer?
+    private var bulletTime: Timer?
+    private var enemyTime: Timer?
+    private var shootCoolDown: Timer?
 
 
     init() {
@@ -79,8 +81,12 @@ final class GameViewModel: ObservableObject {
         addEnemies()
         addBases()
 
-        timer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { [weak self] _ in
+        bulletTime = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { [weak self] _ in
             self?.moveParticles()
+        }
+
+        enemyTime = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            self?.moveEnemies()
         }
     }
 
@@ -91,7 +97,10 @@ final class GameViewModel: ObservableObject {
     }
 
 
+    private var coolDown = false
     func shoot() {
+        if coolDown { return }
+
         let matrix = [
             [3],
             [3],
@@ -100,7 +109,18 @@ final class GameViewModel: ObservableObject {
         let shape = Shape(id: "bullet_\(UUID())", matrix: matrix, column: tank.column + matrix.count, row: GAME_SCALE - 5)
         try? swift2d.addToCanvas(shape: shape)
 
+        coolDown = true
+        shootCoolDown = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            self?.removeCoolDown()
+        }
+
+
         render()
+    }
+
+    private func removeCoolDown() {
+        shootCoolDown?.invalidate()
+        coolDown = false
     }
 
 
@@ -250,14 +270,52 @@ final class GameViewModel: ObservableObject {
         render()
     }
 
+    private var enemyLineMove = 4
+    private var direction = Move.right
 
     private func moveEnemies() {
-        swift2d.getShapes
-            .filter { $0.key.hasPrefix("enemy_") }
-            .forEach {
-                let shape = $0.value
-              //  try? swift2d.move(.up, id: shape.id)
+        let enemies = swift2d.getShapes.filter { $0.key.hasPrefix("enemy_line_\(enemyLineMove)") }.sorted { $0.key < $1.key }
+        var nextDirection = direction
+
+        if enemies.count == 1 {
+            let first = enemies.first?.value
+
+            if first?.lastCollision == .leftWall {
+                direction = .down
+                nextDirection = .right
             }
+
+            if first?.lastCollision == .rightWall {
+                direction = .down
+                nextDirection = .left
+            }
+        } else {
+            let first = enemies.first?.value
+            let last = enemies.last?.value
+
+            if first?.lastCollision == .leftWall {
+                direction = .down
+                nextDirection = .right
+            }
+
+            if last?.lastCollision == .rightWall {
+                direction = .down
+                nextDirection = .left
+            }
+        }
+
+        enemies.forEach {
+            let shape = $0.value
+            try? swift2d.move(direction, id: shape.id)
+        }
+
+        direction = nextDirection
+
+        enemyLineMove -= 1
+
+        if enemyLineMove < 0 {
+            enemyLineMove = 4
+        }
 
         render()
     }
@@ -283,7 +341,10 @@ final class GameViewModel: ObservableObject {
     }
 
     private func handleCollisions() {
+        handleBulletHit()
+    }
 
+    private func handleBulletHit() {
         let bullets = swift2d.getShapes.filter { $0.key.hasPrefix("bullet_") }.values.filter { !$0.lastCollidedShape.isEmpty }
 
         bullets.forEach {
@@ -314,11 +375,15 @@ final class GameViewModel: ObservableObject {
 
             swift2d.remove(id: $0.id)
         }
+
     }
 
 
     deinit {
-        timer?.invalidate()
-        timer = nil
+        bulletTime?.invalidate()
+        bulletTime = nil
+
+        enemyTime?.invalidate()
+        enemyTime = nil
     }
 }
