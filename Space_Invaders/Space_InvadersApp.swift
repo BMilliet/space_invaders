@@ -63,9 +63,11 @@ final class GameViewModel: ObservableObject {
 
     @Published var board: AnyView = AnyView(ZStack{Rectangle()})
 
-    private var bulletTime: Timer?
-    private var enemyTime: Timer?
+    private var bulletMovementTime: Timer?
+    private var enemyMovementTime: Timer?
+
     private var shootCoolDown: Timer?
+    private var enemyShootCoolDown: Timer?
 
 
     init() {
@@ -81,12 +83,44 @@ final class GameViewModel: ObservableObject {
         addEnemies()
         addBases()
 
-        bulletTime = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { [weak self] _ in
+        bulletMovementTime = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { [weak self] _ in
             self?.moveParticles()
         }
 
-        enemyTime = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+        enemyMovementTime = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             self?.moveEnemies()
+        }
+
+        enemyShootCoolDown = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true) { [weak self] _ in
+            self?.enemyShoot()
+        }
+    }
+
+    private func enemyShoot() {
+
+        let enemies = swift2d.getShapes.filter { $0.key.hasPrefix("enemy_line_") }.sorted { $0.key < $1.key }
+        let lastEnemy = enemies.last?.key ?? ""
+
+        let pattern = "_id_\\d+"
+        let regex = try! NSRegularExpression(pattern: pattern, options: [])
+        let range = NSRange(lastEnemy.startIndex..<lastEnemy.endIndex, in: lastEnemy)
+
+        let lastLineSubString = regex.stringByReplacingMatches(
+            in: lastEnemy,
+            options: [],
+            range: range,
+            withTemplate: ""
+        )
+
+        let frontLine = enemies.filter { $0.key.contains(lastLineSubString) }
+
+        if let enemyToShoot = frontLine.randomElement() {
+            let matrix = [
+                [5]
+            ]
+            let enemyShape = enemyToShoot.value
+            let shape = Swift2DShape(id: "enemyBullet_\(UUID())", matrix: matrix, column: enemyShape.column + 1, row: enemyShape.row + 2)
+            try? swift2d.addToCanvas(shape: shape)
         }
     }
 
@@ -106,7 +140,7 @@ final class GameViewModel: ObservableObject {
             [3],
         ]
         let tank = swift2d.shape("tank")!
-        let shape = Shape(id: "bullet_\(UUID())", matrix: matrix, column: tank.column + matrix.count, row: GAME_SCALE - 5)
+        let shape = Swift2DShape(id: "bullet_\(UUID())", matrix: matrix, column: tank.column + matrix.count, row: GAME_SCALE - 5)
         try? swift2d.addToCanvas(shape: shape)
 
         coolDown = true
@@ -137,7 +171,7 @@ final class GameViewModel: ObservableObject {
             [1,1,1,1,1],
             [1,1,1,1,1],
         ]
-        let tank = Shape(id: "tank", matrix: matrix, column: GAME_SCALE/2, row: GAME_SCALE - matrix.count)
+        let tank = Swift2DShape(id: "tank", matrix: matrix, column: GAME_SCALE/2, row: GAME_SCALE - matrix.count)
         try? swift2d.addToCanvas(shape: tank)
     }
 
@@ -152,7 +186,7 @@ final class GameViewModel: ObservableObject {
             let row = (6 * l) + 10
             for i in 0..<9 {
                 let col = (matrix.first!.count + (matrix.first!.count * i) + (i * 4) )
-                let tank = Shape(id: "enemy_line_\(l)_id_\(i)", matrix: matrix, column: col, row: row)
+                let tank = Swift2DShape(id: "enemy_line_\(l)_id_\(i)", matrix: matrix, column: col, row: row)
                 try! swift2d.addToCanvas(shape: tank)
             }
         }
@@ -171,7 +205,7 @@ final class GameViewModel: ObservableObject {
 
         for i in 0..<4 {
             let col = (matrix.first!.count + (matrix.first!.count * i) + (i * 12) )
-            let tank = Shape(id: "base_\(i)", matrix: matrix, column: col, row: row)
+            let tank = Swift2DShape(id: "base_\(i)", matrix: matrix, column: col, row: row)
             try! swift2d.addToCanvas(shape: tank)
         }
     }
@@ -226,7 +260,7 @@ final class GameViewModel: ObservableObject {
                         } else if point == 3 {
 
                             Rectangle()
-                                .fill(Color.red)
+                                .fill(Color.white)
                                 .frame(width: BLOCK_SIZE / 2, height: BLOCK_SIZE / 2)
                                 .position(
                                     x: CGFloat(column) * BLOCK_SIZE,
@@ -251,7 +285,24 @@ final class GameViewModel: ObservableObject {
                                     x: offSet,
                                     y: offSet
                                 )
+
+
+                        } else if point == 5 {
+
+                            Rectangle()
+                                .fill(Color.cyan)
+                                .frame(width: BLOCK_SIZE / 1.3, height: BLOCK_SIZE / 1.3)
+                                .rotationEffect(.degrees(45))
+                                .position(
+                                    x: CGFloat(column) * BLOCK_SIZE,
+                                    y: CGFloat(row) * BLOCK_SIZE
+                                )
+                                .offset(
+                                    x: offSet,
+                                    y: offSet
+                                )
                         }
+
                     }
                 }
             }
@@ -266,6 +317,14 @@ final class GameViewModel: ObservableObject {
                 let shape = $0.value
                 try? swift2d.move(.up, id: shape.id)
             }
+
+        swift2d.getShapes
+            .filter { $0.key.hasPrefix("enemyBullet_") }
+            .forEach {
+                let shape = $0.value
+                try? swift2d.move(.down, id: shape.id)
+            }
+
 
         render()
     }
@@ -345,17 +404,32 @@ final class GameViewModel: ObservableObject {
     }
 
     private func handleBulletHit() {
-        let bullets = swift2d.getShapes.filter { $0.key.hasPrefix("bullet_") }.values.filter { !$0.lastCollidedShape.isEmpty }
+        var bullets = swift2d.getShapes.filter { $0.key.hasPrefix("bullet_") }.values
+            .filter { $0.lastCollision != .none }
+
+        swift2d.getShapes.filter { $0.key.hasPrefix("enemyBullet_") }.values
+            .filter { $0.lastCollision != .none }
+            .forEach { bullets.append($0) }
 
         bullets.forEach {
-            let collidedShape = swift2d.getShapes[$0.lastCollidedShape]!
+
+            if $0.lastCollision != .anotherShape {
+                swift2d.remove(id: $0.id)
+                return
+            }
+
+            guard let collidedShape = swift2d.getShapes[$0.lastCollidedShape] else {
+                swift2d.remove(id: $0.id)
+                return
+            }
 
             if collidedShape.id.contains("enemy_") {
-                print("hit enemy at \(collidedShape.lastCollidedPoint)")
                 swift2d.remove(id: collidedShape.id)
 
             } else if collidedShape.id.contains("bullet_") {
-                print("hit bullet at \(collidedShape.lastCollidedPoint)")
+                swift2d.remove(id: collidedShape.id)
+
+            } else if collidedShape.id.contains("tank") {
                 swift2d.remove(id: collidedShape.id)
 
             } else if collidedShape.id.contains("base_") {
@@ -363,27 +437,24 @@ final class GameViewModel: ObservableObject {
                 swift2d.remove(id: collidedShape.id)
 
                 let relative = collidedShape.lastRelativeCollisionPoint!
-                var matrix = collidedShape.matrix //[relative.column][relative.row]
+                var matrix = collidedShape.matrix
                 matrix[relative.row][relative.column] = 0
                 collidedShape.matrix = matrix
                 collidedShape.printMatrix()
 
                 try! swift2d.addToCanvas(shape: collidedShape)
-
-                print("hit base at \(collidedShape.lastCollidedPoint), relative collision point \(collidedShape.lastRelativeCollisionPoint)")
             }
 
             swift2d.remove(id: $0.id)
         }
-
     }
 
 
     deinit {
-        bulletTime?.invalidate()
-        bulletTime = nil
+        bulletMovementTime?.invalidate()
+        bulletMovementTime = nil
 
-        enemyTime?.invalidate()
-        enemyTime = nil
+        enemyMovementTime?.invalidate()
+        enemyMovementTime = nil
     }
 }
