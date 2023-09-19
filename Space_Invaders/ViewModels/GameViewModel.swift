@@ -13,11 +13,13 @@ final class GameViewModel: ObservableObject {
 
     @Published var board: AnyView = AnyView(ZStack{Rectangle()})
 
-    private var bulletMovementTime: Timer?
+    private var renderTime: Timer?
     private var enemyMovementTime: Timer?
 
     private var shootCoolDown: Timer?
     private var enemyShootCoolDown: Timer?
+
+    private var lives = 3
 
 
     init() {
@@ -25,15 +27,26 @@ final class GameViewModel: ObservableObject {
             columns: GAME_SCALE, rows: GAME_SCALE,
             collisions: [.leftWall, .rightWall, .floor, .anotherShape]
         )
+
+        generateMenu()
     }
 
 
-    func startGame() {
+    func move(_ move: Move, id: String) {
+        try? swift2d.move(move, id: id)
+    }
+
+
+    private func startGame() {
+        clearGame()
+
         addTank()
         addEnemies()
         addBases()
 
-        bulletMovementTime = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { [weak self] _ in
+        lives = 3
+
+        renderTime = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { [weak self] _ in
             self?.moveParticles()
         }
 
@@ -45,6 +58,13 @@ final class GameViewModel: ObservableObject {
             self?.enemyShoot()
         }
     }
+
+
+    private func clearGame() {
+        var keys = swift2d.getShapes.keys
+        keys.forEach { swift2d.remove(id: $0) }
+    }
+
 
     private func enemyShoot() {
 
@@ -75,11 +95,6 @@ final class GameViewModel: ObservableObject {
     }
 
 
-    func move(_ move: Move, id: String) {
-        try? swift2d.move(move, id: id)
-    }
-
-
     private var coolDown = false
     func shoot() {
         if coolDown { return }
@@ -106,7 +121,7 @@ final class GameViewModel: ObservableObject {
 
     private func render() {
         removeOutOfBounds()
-        handleCollisions()
+        handleBulletHit()
         generateBoard()
     }
 
@@ -154,6 +169,23 @@ final class GameViewModel: ObservableObject {
             let tank = Swift2DShape(id: "base_\(i)", matrix: matrix, column: col, row: row)
             try! swift2d.addToCanvas(shape: tank)
         }
+    }
+
+    private func generateMenu() {
+        board = AnyView(
+            ZStack(alignment: .center) {
+                Rectangle()
+                    .fill(Color.black)
+                    .frame(width: CANVAS_SIZE, height: CANVAS_SIZE)
+
+                VStack {
+                    Spacer()
+                    Button("new game") {
+                        self.startGame()
+                    }
+                    .frame(width: CANVAS_SIZE / 2, height: CANVAS_SIZE / 4)
+                }
+            })
     }
 
 
@@ -343,10 +375,6 @@ final class GameViewModel: ObservableObject {
         }
     }
 
-    private func handleCollisions() {
-        handleBulletHit()
-    }
-
     private func handleBulletHit() {
         var bullets = swift2d.getShapes.filter { $0.key.hasPrefix("bullet_") }.values
             .filter { $0.lastCollision != .none }
@@ -374,7 +402,10 @@ final class GameViewModel: ObservableObject {
                 swift2d.remove(id: collidedShape.id)
 
             } else if collidedShape.id.contains("tank") {
+                lives -= 1
+                if lives <= 0 { gameOver() }
                 swift2d.remove(id: collidedShape.id)
+                addTank()
 
             } else if collidedShape.id.contains("base_") {
 
@@ -393,12 +424,21 @@ final class GameViewModel: ObservableObject {
         }
     }
 
-
-    deinit {
-        bulletMovementTime?.invalidate()
-        bulletMovementTime = nil
-
+    private func gameOver() {
+        renderTime?.invalidate()
+        renderTime = nil
         enemyMovementTime?.invalidate()
         enemyMovementTime = nil
+        enemyShootCoolDown?.invalidate()
+        enemyShootCoolDown = nil
+        shootCoolDown?.invalidate()
+        shootCoolDown = nil
+
+        generateMenu()
+    }
+
+
+    deinit {
+        gameOver()
     }
 }

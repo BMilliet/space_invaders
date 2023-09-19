@@ -32,13 +32,9 @@ struct GameView: View {
             .padding()
         }
 
-        .onAppear {
-            viewModel.startGame()
-        }
-    }
-
-    func render() {
-
+//        .onAppear {
+//            viewModel.generateMenu()
+//        }
     }
 }
 
