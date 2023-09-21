@@ -11,7 +11,9 @@ final class GameViewModel: ObservableObject {
 
     let swift2d: Swift2D
 
-    @Published var board: AnyView = AnyView(ZStack{Rectangle()})
+    @Published var board: AnyView = AnyView(Rectangle().fill(Color.clear))
+    @Published var boardOverlay: AnyView = AnyView(Rectangle().fill(Color.clear))
+    @Published var boardEffect: AnyView = AnyView(Rectangle().fill(Color.clear))
 
     private var renderTime: Timer?
     private var enemyMovementTime: Timer?
@@ -21,6 +23,7 @@ final class GameViewModel: ObservableObject {
 
     private var lives = 3
 
+    private var effects = [String: EffectModel]()
 
     init() {
         swift2d = Swift2D(
@@ -45,6 +48,7 @@ final class GameViewModel: ObservableObject {
         addBases()
 
         lives = 3
+        effects.removeAll()
 
         renderTime = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { [weak self] _ in
             self?.moveParticles()
@@ -61,8 +65,9 @@ final class GameViewModel: ObservableObject {
 
 
     private func clearGame() {
-        var keys = swift2d.getShapes.keys
+        let keys = swift2d.getShapes.keys
         keys.forEach { swift2d.remove(id: $0) }
+        boardOverlay = AnyView(Rectangle().fill(Color.clear))
     }
 
 
@@ -122,6 +127,7 @@ final class GameViewModel: ObservableObject {
     private func render() {
         removeOutOfBounds()
         handleBulletHit()
+        generateBoardEffect()
         generateBoard()
     }
 
@@ -172,21 +178,65 @@ final class GameViewModel: ObservableObject {
     }
 
     private func generateMenu() {
-        board = AnyView(
+        boardOverlay = AnyView(
             ZStack(alignment: .center) {
                 Rectangle()
-                    .fill(Color.black)
-                    .frame(width: CANVAS_SIZE, height: CANVAS_SIZE)
+                    .fill(Color.clear)
+                    .frame(width: CANVAS_SIZE / 2, height: CANVAS_SIZE / 2)
 
                 VStack {
                     Spacer()
                     Button("new game") {
                         self.startGame()
                     }
+                    .keyboardShortcut(KeyEquivalent.return, modifiers: [])
                     .frame(width: CANVAS_SIZE / 2, height: CANVAS_SIZE / 4)
+                    .padding()
                 }
             })
     }
+
+
+    private func generateBoardEffect() {
+
+        let offSet = BLOCK_SIZE / 2
+        let _effects = Array(effects.values)
+
+        boardOverlay = AnyView(
+            ZStack(alignment: .topLeading) {
+
+                ForEach(_effects, id: \.self) { effect in
+
+                    if effect.type == .enemyExplosion {
+
+                        EnemyExplosionView()
+                                .position(
+                                    x: CGFloat(effect.col) * BLOCK_SIZE,
+                                    y: CGFloat(effect.row) * BLOCK_SIZE
+                                )
+                                .offset(
+                                    x: offSet,
+                                    y: offSet
+                                )
+
+                    } else if effect.type == .tankExplosion {
+
+                        TankExplosionView()
+                            .position(
+                                x: CGFloat(effect.col) * BLOCK_SIZE,
+                                y: CGFloat(effect.row) * BLOCK_SIZE
+                            )
+                            .offset(
+                                x: offSet,
+                                y: offSet
+                            )
+
+                    }
+                }
+            }
+        )
+    }
+
 
 
     private func generateBoard() {
@@ -280,7 +330,6 @@ final class GameViewModel: ObservableObject {
                                     y: offSet
                                 )
                         }
-
                     }
                 }
             }
@@ -398,10 +447,21 @@ final class GameViewModel: ObservableObject {
             if collidedShape.id.contains("enemy_") {
                 swift2d.remove(id: collidedShape.id)
 
+                let col = collidedShape.column
+                let row = collidedShape.row
+
+                effects["\(col)_\(row)"] = EffectModel(col: col, row: row, type: .enemyExplosion)
+
             } else if collidedShape.id.contains("bullet_") {
                 swift2d.remove(id: collidedShape.id)
 
             } else if collidedShape.id.contains("tank") {
+
+                let col = collidedShape.column
+                let row = collidedShape.row
+
+                effects["\(col)_\(row)"] = EffectModel(col: col, row: row, type: .tankExplosion)
+
                 lives -= 1
                 if lives <= 0 { gameOver() }
                 swift2d.remove(id: collidedShape.id)

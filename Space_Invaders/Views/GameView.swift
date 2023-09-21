@@ -8,7 +8,11 @@ struct GameView: View {
     var body: some View {
         VStack {
 
-            viewModel.board
+            ZStack {
+                viewModel.board
+                viewModel.boardEffect
+                viewModel.boardOverlay
+            }
 
             HStack {
 
@@ -31,10 +35,6 @@ struct GameView: View {
             .keyboardShortcut(KeyEquivalent.space, modifiers: [])
             .padding()
         }
-
-//        .onAppear {
-//            viewModel.generateMenu()
-//        }
     }
 }
 
