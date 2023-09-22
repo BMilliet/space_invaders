@@ -199,44 +199,55 @@ final class GameViewModel: ObservableObject {
 
     private func generateBoardEffect() {
 
-        let offSet = BLOCK_SIZE / 2
+        let offset = BLOCK_SIZE / 2
         let _effects = Array(effects.values)
 
         boardOverlay = AnyView(
             ZStack(alignment: .topLeading) {
 
                 ForEach(_effects, id: \.self) { effect in
+                    switch effect.type {
 
-                    if effect.type == .enemyExplosion {
+                    case .enemyExplosion:
 
-                        EnemyExplosionView()
-                                .position(
-                                    x: CGFloat(effect.col) * BLOCK_SIZE,
-                                    y: CGFloat(effect.row) * BLOCK_SIZE
-                                )
-                                .offset(
-                                    x: offSet,
-                                    y: offSet
-                                )
-
-                    } else if effect.type == .tankExplosion {
-
-                        TankExplosionView()
+                        ExplosionView(radius: 160)
                             .position(
                                 x: CGFloat(effect.col) * BLOCK_SIZE,
                                 y: CGFloat(effect.row) * BLOCK_SIZE
                             )
                             .offset(
-                                x: offSet,
-                                y: offSet
+                                x: offset,
+                                y: offset
                             )
 
+                    case .tankExplosion:
+
+                        ExplosionView(radius: 160)
+                            .position(
+                                x: CGFloat(effect.col) * BLOCK_SIZE,
+                                y: CGFloat(effect.row) * BLOCK_SIZE
+                            )
+                            .offset(
+                                x: offset,
+                                y: offset
+                            )
+
+                    case .baseHit:
+
+                        ExplosionView(radius: 44)
+                            .position(
+                                x: CGFloat(effect.col) * BLOCK_SIZE,
+                                y: CGFloat(effect.row) * BLOCK_SIZE
+                            )
+                            .offset(
+                                x: offset,
+                                y: offset
+                            )
                     }
                 }
             }
         )
     }
-
 
 
     private func generateBoard() {
@@ -254,9 +265,9 @@ final class GameViewModel: ObservableObject {
                 ForEach(0..<matrix.count, id: \.self) { row in
                     ForEach(0..<matrix[row].count, id: \.self) { column in
 
-                        let point = matrix[row][column]
+                        switch matrix[row][column] {
+                        case 1:
 
-                        if point == 1 {
                             Rectangle()
                                 .fill(Color.blue)
                                 .frame(width: BLOCK_SIZE, height: BLOCK_SIZE)
@@ -270,7 +281,7 @@ final class GameViewModel: ObservableObject {
                                 )
 
 
-                        } else if point == 2 {
+                        case 2:
 
                             Rectangle()
                                 .fill(Color.purple)
@@ -285,7 +296,7 @@ final class GameViewModel: ObservableObject {
                                 )
 
 
-                        } else if point == 3 {
+                        case 3:
 
                             Rectangle()
                                 .fill(Color.white)
@@ -300,7 +311,7 @@ final class GameViewModel: ObservableObject {
                                 )
 
 
-                        } else if point == 4 {
+                        case 4:
 
                             Rectangle()
                                 .fill(Color.green)
@@ -315,7 +326,7 @@ final class GameViewModel: ObservableObject {
                                 )
 
 
-                        } else if point == 5 {
+                        case 5:
 
                             Rectangle()
                                 .fill(Color.cyan)
@@ -329,6 +340,10 @@ final class GameViewModel: ObservableObject {
                                     x: offSet,
                                     y: offSet
                                 )
+
+                        default:
+                            EmptyView()
+
                         }
                     }
                 }
@@ -419,7 +434,6 @@ final class GameViewModel: ObservableObject {
             }
 
         toRemove.forEach {
-            print("removing \($0)")
             swift2d.remove(id: $0)
         }
     }
@@ -444,22 +458,20 @@ final class GameViewModel: ObservableObject {
                 return
             }
 
-            if collidedShape.id.contains("enemy_") {
+            let col = collidedShape.column
+            let row = collidedShape.row
+
+
+            switch collidedShape.id {
+
+            case let e where e.contains("bullet_"):
                 swift2d.remove(id: collidedShape.id)
 
-                let col = collidedShape.column
-                let row = collidedShape.row
-
+            case let e where e.contains("enemy_"):
+                swift2d.remove(id: collidedShape.id)
                 effects["\(col)_\(row)"] = EffectModel(col: col, row: row, type: .enemyExplosion)
 
-            } else if collidedShape.id.contains("bullet_") {
-                swift2d.remove(id: collidedShape.id)
-
-            } else if collidedShape.id.contains("tank") {
-
-                let col = collidedShape.column
-                let row = collidedShape.row
-
+            case let e where e.contains("tank"):
                 effects["\(col)_\(row)"] = EffectModel(col: col, row: row, type: .tankExplosion)
 
                 lives -= 1
@@ -467,17 +479,22 @@ final class GameViewModel: ObservableObject {
                 swift2d.remove(id: collidedShape.id)
                 addTank()
 
-            } else if collidedShape.id.contains("base_") {
-
+            case let e where e.contains("base_"):
                 swift2d.remove(id: collidedShape.id)
 
                 let relative = collidedShape.lastRelativeCollisionPoint!
+                let collision = collidedShape.lastCollidedPoint!
                 var matrix = collidedShape.matrix
                 matrix[relative.row][relative.column] = 0
                 collidedShape.matrix = matrix
-                collidedShape.printMatrix()
+
+                effects["\(collision.column)_\(collision.row)"] =
+                EffectModel(col: collision.column, row: collision.row, type: .baseHit)
 
                 try! swift2d.addToCanvas(shape: collidedShape)
+
+            default:
+                print("")
             }
 
             swift2d.remove(id: $0.id)

@@ -8,4 +8,3 @@ struct Space_InvadersApp: App {
         }
     }
 }
-

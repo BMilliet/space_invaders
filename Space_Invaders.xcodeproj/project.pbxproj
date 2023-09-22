@@ -8,25 +8,25 @@
 
 /* Begin PBXBuildFile section */
 		570441F62ABC710800AAB682 /* EffectModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 570441F52ABC710800AAB682 /* EffectModel.swift */; };
-		570441F82ABC713E00AAB682 /* TankExplosionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 570441F72ABC713E00AAB682 /* TankExplosionView.swift */; };
 		570CE4D82AA6129200AF25A4 /* Swift2D in Frameworks */ = {isa = PBXBuildFile; productRef = 570CE4D72AA6129200AF25A4 /* Swift2D */; };
+		5723B84B2ABE2F8100D4F21C /* GameModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5723B84A2ABE2F8100D4F21C /* GameModel.swift */; };
 		57572D8D2AA0D144001F9239 /* Space_InvadersApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57572D8C2AA0D144001F9239 /* Space_InvadersApp.swift */; };
 		57572D912AA0D145001F9239 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 57572D902AA0D145001F9239 /* Assets.xcassets */; };
 		57572D942AA0D145001F9239 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 57572D932AA0D145001F9239 /* Preview Assets.xcassets */; };
-		57C2D1C52ABA0CCD004F2A98 /* EnemyExplosionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57C2D1C42ABA0CCD004F2A98 /* EnemyExplosionView.swift */; };
+		57C2D1C52ABA0CCD004F2A98 /* ExplosionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57C2D1C42ABA0CCD004F2A98 /* ExplosionView.swift */; };
 		57FAAE762AB653F4008B52B6 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57FAAE752AB653F4008B52B6 /* GameView.swift */; };
 		57FAAE792AB65474008B52B6 /* GameViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57FAAE782AB65474008B52B6 /* GameViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		570441F52ABC710800AAB682 /* EffectModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EffectModel.swift; sourceTree = "<group>"; };
-		570441F72ABC713E00AAB682 /* TankExplosionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TankExplosionView.swift; sourceTree = "<group>"; };
+		5723B84A2ABE2F8100D4F21C /* GameModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameModel.swift; sourceTree = "<group>"; };
 		57572D892AA0D144001F9239 /* Space_Invaders.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Space_Invaders.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		57572D8C2AA0D144001F9239 /* Space_InvadersApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Space_InvadersApp.swift; sourceTree = "<group>"; };
 		57572D902AA0D145001F9239 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		57572D932AA0D145001F9239 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		57572D952AA0D145001F9239 /* Space_Invaders.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Space_Invaders.entitlements; sourceTree = "<group>"; };
-		57C2D1C42ABA0CCD004F2A98 /* EnemyExplosionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnemyExplosionView.swift; sourceTree = "<group>"; };
+		57C2D1C42ABA0CCD004F2A98 /* ExplosionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplosionView.swift; sourceTree = "<group>"; };
 		57FAAE752AB653F4008B52B6 /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
 		57FAAE782AB65474008B52B6 /* GameViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -47,6 +47,7 @@
 			isa = PBXGroup;
 			children = (
 				570441F52ABC710800AAB682 /* EffectModel.swift */,
+				5723B84A2ABE2F8100D4F21C /* GameModel.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -93,8 +94,7 @@
 			isa = PBXGroup;
 			children = (
 				57FAAE752AB653F4008B52B6 /* GameView.swift */,
-				57C2D1C42ABA0CCD004F2A98 /* EnemyExplosionView.swift */,
-				570441F72ABC713E00AAB682 /* TankExplosionView.swift */,
+				57C2D1C42ABA0CCD004F2A98 /* ExplosionView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -185,10 +185,10 @@
 			files = (
 				57FAAE792AB65474008B52B6 /* GameViewModel.swift in Sources */,
 				57FAAE762AB653F4008B52B6 /* GameView.swift in Sources */,
-				570441F82ABC713E00AAB682 /* TankExplosionView.swift in Sources */,
 				570441F62ABC710800AAB682 /* EffectModel.swift in Sources */,
 				57572D8D2AA0D144001F9239 /* Space_InvadersApp.swift in Sources */,
-				57C2D1C52ABA0CCD004F2A98 /* EnemyExplosionView.swift in Sources */,
+				57C2D1C52ABA0CCD004F2A98 /* ExplosionView.swift in Sources */,
+				5723B84B2ABE2F8100D4F21C /* GameModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
