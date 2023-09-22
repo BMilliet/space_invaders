@@ -34,9 +34,7 @@ final class GameViewModel: ObservableObject {
 
     func shoot() {
         if playerShootCoolDown { return }
-
         gameModel.playerShoots()
-
         playerShootCoolDown = true
         shootCoolDown = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             self?.removeCoolDown()
@@ -48,6 +46,7 @@ final class GameViewModel: ObservableObject {
         gameModel.reset()
 
         boardOverlay = AnyView(Rectangle().fill(Color.clear))
+        boardEffect = AnyView(Rectangle().fill(Color.clear))
 
         renderTime = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { [weak self] _ in
             self?.moveParticles()
@@ -75,12 +74,12 @@ final class GameViewModel: ObservableObject {
         gameModel.handleBulletHit()
         generateBoardEffect()
         generateBoard()
+        ganerateStatusBoard()
     }
 
 
     private func  checkGameStatus() {
         if gameModel.isGameOver() { startGame() }
-        // check score
     }
 
 
@@ -125,12 +124,32 @@ final class GameViewModel: ObservableObject {
     }
 
 
+    private func ganerateStatusBoard() {
+        boardOverlay = AnyView(
+            ZStack(alignment: .topLeading) {
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(width: CANVAS_SIZE, height: CANVAS_SIZE)
+
+                VStack {
+                    Text("score: \(gameModel.getScore())")
+                        .font(.title2)
+                        .foregroundColor(.gray)
+                        .position(
+                            x: CANVAS_SIZE/2,
+                            y: 32
+                        )
+                }
+            })
+    }
+
+
     private func generateBoardEffect() {
 
         let offset = BLOCK_SIZE / 2
         let _effects = gameModel.getEffect()
 
-        boardOverlay = AnyView(
+        boardEffect = AnyView(
             ZStack(alignment: .topLeading) {
 
                 ForEach(_effects, id: \.self) { effect in
@@ -271,7 +290,6 @@ final class GameViewModel: ObservableObject {
 
                         default:
                             EmptyView()
-
                         }
                     }
                 }

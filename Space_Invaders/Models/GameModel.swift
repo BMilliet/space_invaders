@@ -5,6 +5,7 @@ final class GameModel {
     
     private let swift2d: Swift2D
     private var lives = 3
+    private var score = 0
     private var gameOver = false
     private var effects = [String: EffectModel]()
 
@@ -20,21 +21,14 @@ final class GameModel {
     }
 
 
-    func getCanvas() -> [[Int]] {
-        return swift2d.canvas
-    }
-
-    func getEffect() -> [EffectModel] {
-        return Array(effects.values)
-    }
-
-    func isGameOver() -> Bool {
-        return gameOver
-    }
+    func getLives()   -> Int           { return lives }
+    func getScore()   -> Int           { return score }
+    func isGameOver() -> Bool          { return gameOver }
+    func getCanvas()  -> [[Int]]       { return swift2d.canvas }
+    func getEffect()  -> [EffectModel] { return Array(effects.values) }
 
 
     func reset() {
-
         let keys = swift2d.getShapes.keys
         keys.forEach { swift2d.remove(id: $0) }
 
@@ -43,9 +37,11 @@ final class GameModel {
         addBases()
 
         lives = 3
+        score = 0
         effects.removeAll()
     }
-    
+
+
     func move(_ move: Move, id: String) {
         try? swift2d.move(move, id: id)
     }
@@ -58,6 +54,13 @@ final class GameModel {
                 let shape = $0.value
                 try? swift2d.move(move, id: shape.id)
             }
+    }
+
+
+    func playerShoots() {
+        let tank = swift2d.shape("tank")!
+        let shape = Inventory.getBullet1(col: (tank.column + 2), row: (GAME_SCALE - 5))
+        try? swift2d.addToCanvas(shape: shape)
     }
 
 
@@ -112,6 +115,7 @@ final class GameModel {
             case let e where e.contains("enemy_"):
                 swift2d.remove(id: collidedShape.id)
                 effects["\(col)_\(row)"] = EffectModel(col: col, row: row, type: .enemyExplosion)
+                score += 50
 
             case let e where e.contains("tank"):
                 effects["\(col)_\(row)"] = EffectModel(col: col, row: row, type: .tankExplosion)
@@ -189,6 +193,7 @@ final class GameModel {
         }
     }
 
+
     func enemyShoot() {
 
         let enemies = swift2d.getShapes.filter { $0.key.hasPrefix("enemy_line_") }.sorted { $0.key < $1.key }
@@ -212,68 +217,26 @@ final class GameModel {
                 [5]
             ]
             let enemyShape = enemyToShoot.value
-            let shape = Swift2DShape(id: "enemyBullet_\(UUID())", matrix: matrix, column: enemyShape.column + 1, row: enemyShape.row + 2)
+            let shape = Inventory.getBullet2(col: (enemyShape.column + 1), row: (enemyShape.row + 2))
             try? swift2d.addToCanvas(shape: shape)
         }
     }
 
 
-    func playerShoots() {
-        let matrix = [
-            [3],
-            [3],
-        ]
-        let tank = swift2d.shape("tank")!
-        let shape = Swift2DShape(id: "bullet_\(UUID())", matrix: matrix, column: tank.column + matrix.count, row: GAME_SCALE - 5)
-        try? swift2d.addToCanvas(shape: shape)
-    }
-
-
-    // :MARK: characters
-
     private func addTank() {
-        let matrix = [
-            [0,0,1,0,0],
-            [1,1,1,1,1],
-            [1,1,1,1,1],
-        ]
-        let tank = Swift2DShape(id: "tank", matrix: matrix, column: GAME_SCALE/2, row: GAME_SCALE - matrix.count)
-        try? swift2d.addToCanvas(shape: tank)
+        try! swift2d.addToCanvas(shape: Inventory.getTank())
     }
 
 
     private func addEnemies() {
-        let matrix = [
-            [2,2,2],
-            [2,2,2],
-        ]
-
-        for l in 0..<5 {
-            let row = (6 * l) + 10
-            for i in 0..<9 {
-                let col = (matrix.first!.count + (matrix.first!.count * i) + (i * 4) )
-                let tank = Swift2DShape(id: "enemy_line_\(l)_id_\(i)", matrix: matrix, column: col, row: row)
-                try! swift2d.addToCanvas(shape: tank)
-            }
+        Inventory.getEnemies().forEach {
+            try! swift2d.addToCanvas(shape: $0)
         }
     }
 
     private func addBases() {
-        let matrix = [
-            [4,4,4,4,4,4,4],
-            [4,4,4,4,4,4,4],
-            [4,4,4,4,4,4,4],
-            [4,4,0,0,0,4,4],
-            [4,4,0,0,0,4,4],
-        ]
-
-        let row = GAME_SCALE - (matrix.count * 3)
-
-        for i in 0..<4 {
-            let col = (matrix.first!.count + (matrix.first!.count * i) + (i * 12) )
-            let tank = Swift2DShape(id: "base_\(i)", matrix: matrix, column: col, row: row)
-            try! swift2d.addToCanvas(shape: tank)
+        Inventory.getBases().forEach {
+            try! swift2d.addToCanvas(shape: $0)
         }
     }
-
 }
