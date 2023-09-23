@@ -1,5 +1,4 @@
 import Foundation
-import Swift2D
 import SwiftUI
 
 let GAME_SCALE = 80
@@ -12,8 +11,8 @@ final class GameViewModel: ObservableObject {
     private let gameModel = GameModel()
 
     @Published var board: AnyView = AnyView(Rectangle().fill(Color.clear))
-    @Published var boardOverlay: AnyView = AnyView(Rectangle().fill(Color.clear))
     @Published var boardEffect: AnyView = AnyView(Rectangle().fill(Color.clear))
+    @Published var boardOverlay: AnyView = AnyView(Rectangle().fill(Color.clear))
 
     private var renderTime: Timer?
     private var shootCoolDown: Timer?
@@ -27,7 +26,7 @@ final class GameViewModel: ObservableObject {
     }
 
 
-    func move(_ move: Move, id: String) {
+    func move(_ move: MoveDirection, id: String) {
         gameModel.move(move, id: id)
     }
 
@@ -36,7 +35,7 @@ final class GameViewModel: ObservableObject {
         if playerShootCoolDown { return }
         gameModel.playerShoots()
         playerShootCoolDown = true
-        shootCoolDown = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+        shootCoolDown = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: true) { [weak self] _ in
             self?.removeCoolDown()
         }
     }
@@ -93,10 +92,13 @@ final class GameViewModel: ObservableObject {
     private func gameOver() {
         renderTime?.invalidate()
         renderTime = nil
+
         enemyMovementTime?.invalidate()
         enemyMovementTime = nil
+
         enemyShootCoolDown?.invalidate()
         enemyShootCoolDown = nil
+
         shootCoolDown?.invalidate()
         shootCoolDown = nil
 
@@ -131,15 +133,21 @@ final class GameViewModel: ObservableObject {
                     .fill(Color.clear)
                     .frame(width: CANVAS_SIZE, height: CANVAS_SIZE)
 
-                VStack {
-                    Text("score: \(gameModel.getScore())")
-                        .font(.title2)
-                        .foregroundColor(.gray)
-                        .position(
-                            x: CANVAS_SIZE/2,
-                            y: 32
-                        )
-                }
+                Text("score: \(gameModel.getScore())")
+                    .font(.title2)
+                    .foregroundColor(.gray)
+                    .position(
+                        x: CANVAS_SIZE/2,
+                        y: 32
+                    )
+
+                Text("lives: \(gameModel.getLives())")
+                    .font(.title3)
+                    .foregroundColor(.gray)
+                    .position(
+                        x: CANVAS_SIZE/1.1,
+                        y: 32
+                    )
             })
     }
 
@@ -157,7 +165,7 @@ final class GameViewModel: ObservableObject {
 
                     case .enemyExplosion:
 
-                        ExplosionView(radius: 160)
+                        Explosion1View(radius: 160)
                             .position(
                                 x: CGFloat(effect.col) * BLOCK_SIZE,
                                 y: CGFloat(effect.row) * BLOCK_SIZE
@@ -169,7 +177,7 @@ final class GameViewModel: ObservableObject {
 
                     case .tankExplosion:
 
-                        ExplosionView(radius: 600)
+                        Explosion2View(radius: 600)
                             .position(
                                 x: CGFloat(effect.col) * BLOCK_SIZE,
                                 y: CGFloat(effect.row) * BLOCK_SIZE
@@ -181,7 +189,7 @@ final class GameViewModel: ObservableObject {
 
                     case .baseHit:
 
-                        ExplosionView(radius: 44)
+                        Explosion3View(radius: 60)
                             .position(
                                 x: CGFloat(effect.col) * BLOCK_SIZE,
                                 y: CGFloat(effect.row) * BLOCK_SIZE

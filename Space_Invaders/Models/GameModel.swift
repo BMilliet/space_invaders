@@ -3,7 +3,7 @@ import Swift2D
 
 final class GameModel {
     
-    private let swift2d: Swift2D
+    private let swift2d: Swift2D = Swift2D(columns: GAME_SCALE, rows: GAME_SCALE)
     private var lives = 3
     private var score = 0
     private var gameOver = false
@@ -13,12 +13,7 @@ final class GameModel {
     private var direction = Move.right
 
 
-    init() {
-        swift2d = Swift2D(
-            columns: GAME_SCALE, rows: GAME_SCALE,
-            collisions: [.leftWall, .rightWall, .floor, .anotherShape]
-        )
-    }
+    init() {}
 
 
     func getLives()   -> Int           { return lives }
@@ -42,8 +37,13 @@ final class GameModel {
     }
 
 
-    func move(_ move: Move, id: String) {
-        try? swift2d.move(move, id: id)
+    func move(_ move: MoveDirection, id: String) {
+        switch move {
+        case .left:
+            try? swift2d.move(.left, id: id)
+        case .right:
+            try? swift2d.move(.right, id: id)
+        }
     }
 
 
@@ -213,9 +213,6 @@ final class GameModel {
         let frontLine = enemies.filter { $0.key.contains(lastLineSubString) }
 
         if let enemyToShoot = frontLine.randomElement() {
-            let matrix = [
-                [5]
-            ]
             let enemyShape = enemyToShoot.value
             let shape = Inventory.getBullet2(col: (enemyShape.column + 1), row: (enemyShape.row + 2))
             try? swift2d.addToCanvas(shape: shape)
@@ -239,4 +236,9 @@ final class GameModel {
             try! swift2d.addToCanvas(shape: $0)
         }
     }
+}
+
+
+enum MoveDirection {
+    case right, left
 }
