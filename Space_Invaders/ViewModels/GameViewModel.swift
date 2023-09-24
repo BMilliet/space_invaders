@@ -53,7 +53,7 @@ final class GameViewModel: ObservableObject {
          renderTime have the most impact on CPU usage.
          Keep in mind lowering the timeInterval makes the game faster and raises the CPU usage.
          */
-        renderTime = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: true) { [weak self] _ in
+        renderTime = Timer.scheduledTimer(withTimeInterval: 0.06, repeats: true) { [weak self] _ in
             self?.moveParticles()
         }
 
