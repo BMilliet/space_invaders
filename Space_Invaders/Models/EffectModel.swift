@@ -5,5 +5,5 @@ struct EffectModel: Hashable {
 }
 
 enum EffectType {
-    case enemyExplosion, tankExplosion, baseHit
+    case enemyExplosion, tankExplosion, baseHit, bonusShipExplosion
 }

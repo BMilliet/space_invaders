@@ -16,6 +16,7 @@ final class GameViewModel: ObservableObject {
 
     private var renderTime: Timer?
     private var shootCoolDown: Timer?
+    private var bonusShipMove: Timer?
     private var enemyMovementTime: Timer?
     private var enemyShootCoolDown: Timer?
 
@@ -35,8 +36,9 @@ final class GameViewModel: ObservableObject {
         if playerShootCoolDown { return }
         gameModel.playerShoots()
         playerShootCoolDown = true
-        shootCoolDown = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: true) { [weak self] _ in
-            self?.removeCoolDown()
+        shootCoolDown = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            self?.shootCoolDown?.invalidate()
+            self?.playerShootCoolDown = false
         }
     }
 
@@ -47,7 +49,11 @@ final class GameViewModel: ObservableObject {
         boardOverlay = AnyView(Rectangle().fill(Color.clear))
         boardEffect = AnyView(Rectangle().fill(Color.clear))
 
-        renderTime = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { [weak self] _ in
+        /*
+         renderTime have the most impact on CPU usage.
+         Keep in mind lowering the timeInterval makes the game faster and raises the CPU usage.
+         */
+        renderTime = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: true) { [weak self] _ in
             self?.moveParticles()
         }
 
@@ -58,18 +64,16 @@ final class GameViewModel: ObservableObject {
         enemyShootCoolDown = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true) { [weak self] _ in
             self?.gameModel.enemyShoot()
         }
-    }
 
-
-    private func removeCoolDown() {
-        shootCoolDown?.invalidate()
-        playerShootCoolDown = false
+        bonusShipMove = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            self?.gameModel.moveBonusShip()
+        }
     }
 
 
     private func render() {
         checkGameStatus()
-        gameModel.removeOutOfBounds()
+        gameModel.removeOutOfBoundsBullets()
         gameModel.handleBulletHit()
         generateBoardEffect()
         generateBoard()
@@ -198,6 +202,19 @@ final class GameViewModel: ObservableObject {
                                 x: offset,
                                 y: offset
                             )
+
+                    case .bonusShipExplosion:
+
+                        Explosion4View(radius: 300)
+                            .position(
+                                x: CGFloat(effect.col) * BLOCK_SIZE,
+                                y: CGFloat(effect.row) * BLOCK_SIZE
+                            )
+                            .offset(
+                                x: offset,
+                                y: offset
+                            )
+
                     }
                 }
             }
@@ -287,6 +304,20 @@ final class GameViewModel: ObservableObject {
                                 .fill(Color.cyan)
                                 .frame(width: BLOCK_SIZE / 1.3, height: BLOCK_SIZE / 1.3)
                                 .rotationEffect(.degrees(45))
+                                .position(
+                                    x: CGFloat(column) * BLOCK_SIZE,
+                                    y: CGFloat(row) * BLOCK_SIZE
+                                )
+                                .offset(
+                                    x: offSet,
+                                    y: offSet
+                                )
+
+                        case 6:
+
+                            Rectangle()
+                                .fill(Color.pink)
+                                .frame(width: BLOCK_SIZE, height: BLOCK_SIZE)
                                 .position(
                                     x: CGFloat(column) * BLOCK_SIZE,
                                     y: CGFloat(row) * BLOCK_SIZE

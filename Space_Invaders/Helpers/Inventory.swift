@@ -89,7 +89,7 @@ enum Inventory {
         return Swift2DShape(
             id: "bonusShip_\(UUID())",
             matrix: matrix,
-            column: -20, row: 10,
+            column: -20, row: 6,
             collisions: [.anotherShape]
         )
     }

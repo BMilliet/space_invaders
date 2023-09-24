@@ -29,7 +29,7 @@ struct GameView: View {
 
             }
 
-            Button("space") {
+            Button("shoot") {
                 viewModel.shoot()
             }
             .keyboardShortcut(KeyEquivalent.space, modifiers: [])

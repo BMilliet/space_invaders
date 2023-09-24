@@ -10,8 +10,9 @@ final class GameModel {
     private var effects = [String: EffectModel]()
 
     private var enemyLineMove = 4
-    private var direction = Move.right
+    private var enemyLineMoveDirection = Move.right
 
+    private var bonusShipMoveDirection = Move.right
 
     init() {}
 
@@ -30,6 +31,7 @@ final class GameModel {
         addTank()
         addEnemies()
         addBases()
+        addBonusShip()
 
         lives = 3
         score = 0
@@ -64,10 +66,25 @@ final class GameModel {
     }
 
 
-    func removeOutOfBounds() {
+    func moveBonusShip() {
+        guard let ship = swift2d.getShapes.filter({ $0.key.hasPrefix("bonusShip_") }).first?.value else {
+            return
+        }
+
+        if ship.column < 0 {
+            bonusShipMoveDirection = .right
+        } else if ship.column > swift2d.canvas.first!.count + 10 {
+            bonusShipMoveDirection = .left
+        }
+
+        try? swift2d.move(bonusShipMoveDirection, id: ship.id)
+    }
+
+
+    func removeOutOfBoundsBullets() {
         var toRemove = [String]()
 
-        swift2d.getShapes.values
+        swift2d.getShapes.filter { $0.key.hasPrefix("bullet_") }.values
             .forEach {
                 let row = $0.row
                 let col = $0.column
@@ -117,6 +134,12 @@ final class GameModel {
                 effects["\(col)_\(row)"] = EffectModel(col: col, row: row, type: .enemyExplosion)
                 score += 50
 
+            case let e where e.contains("bonusShip_"):
+                swift2d.remove(id: collidedShape.id)
+                effects["\(col)_\(row)"] = EffectModel(col: col, row: row, type: .bonusShipExplosion)
+                score += 250
+
+
             case let e where e.contains("tank"):
                 effects["\(col)_\(row)"] = EffectModel(col: col, row: row, type: .tankExplosion)
 
@@ -150,18 +173,18 @@ final class GameModel {
 
     func moveEnemies() {
         let enemies = swift2d.getShapes.filter { $0.key.hasPrefix("enemy_line_\(enemyLineMove)") }.sorted { $0.key < $1.key }
-        var nextDirection = direction
+        var nextDirection = enemyLineMoveDirection
 
         if enemies.count == 1 {
             let first = enemies.first?.value
 
             if first?.lastCollision == .leftWall {
-                direction = .down
+                enemyLineMoveDirection = .down
                 nextDirection = .right
             }
 
             if first?.lastCollision == .rightWall {
-                direction = .down
+                enemyLineMoveDirection = .down
                 nextDirection = .left
             }
         } else {
@@ -169,22 +192,22 @@ final class GameModel {
             let last = enemies.last?.value
 
             if first?.lastCollision == .leftWall {
-                direction = .down
+                enemyLineMoveDirection = .down
                 nextDirection = .right
             }
 
             if last?.lastCollision == .rightWall {
-                direction = .down
+                enemyLineMoveDirection = .down
                 nextDirection = .left
             }
         }
 
         enemies.forEach {
             let shape = $0.value
-            try? swift2d.move(direction, id: shape.id)
+            try? swift2d.move(enemyLineMoveDirection, id: shape.id)
         }
 
-        direction = nextDirection
+        enemyLineMoveDirection = nextDirection
 
         enemyLineMove -= 1
 
@@ -235,6 +258,10 @@ final class GameModel {
         Inventory.getBases().forEach {
             try! swift2d.addToCanvas(shape: $0)
         }
+    }
+
+    private func addBonusShip() {
+        try! swift2d.addToCanvas(shape: Inventory.getBonusShip())
     }
 }
 
